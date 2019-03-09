@@ -46,8 +46,8 @@ export default {
   name: 'App',
   data() {
     return {
-      //host: 'http://192.168.0.124',
-      host: '',
+      host: 'http://192.168.0.124',
+      //host: '',
       bottomNav: this.$route.name,
       time: '',
     };
