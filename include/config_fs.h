@@ -16,6 +16,12 @@ struct Config {
     String ssid;
     String password;
     String host;
+    String ip_mode;
+    String ip;
+    String subnet;
+    String gateway;
+    String dns1;
+    String dns2;
     Sensor sensors[9];
 };
 
@@ -62,6 +68,48 @@ void configFromString(String &data, Config &config){
         Serial.println("host empty");
         config.host = "";
     }
+    if (doc["ip"] != "") {
+        const char *i = doc["ip"];
+        config.ip = i;
+    } else {
+        Serial.println("ip empty");
+        config.ip = "";
+    }
+    if (doc["ip_mode"] != "") {
+        const char *i = doc["ip_mode"];
+        config.ip_mode = i;
+    } else {
+        Serial.println("ip_mode empty");
+        config.ip_mode = "";
+    }
+    if (doc["subnet"] != "") {
+        const char *s = doc["subnet"];
+        config.subnet = s;
+    } else {
+        Serial.println("subnet empty");
+        config.subnet = "";
+    }
+    if (doc["gateway"] != "") {
+        const char *g = doc["gateway"];
+        config.gateway = g;
+    } else {
+        Serial.println("gateway empty");
+        config.gateway = "";
+    }
+    if (doc["dns1"] != "") {
+        const char *g = doc["dns1"];
+        config.dns1 = g;
+    } else {
+        Serial.println("dns1 empty");
+        config.dns1 = "";
+    }
+    if (doc["dns2"] != "") {
+        const char *g = doc["dns2"];
+        config.dns2 = g;
+    } else {
+        Serial.println("dns2 empty");
+        config.dns2 = "";
+    }
 }
 
 // Loads the configuration from a file
@@ -98,6 +146,12 @@ String configToString(const Config &config) {
     doc["ssid"] = config.ssid;
     doc["password"] = config.password;
     doc["host"] = config.host;
+    doc["ip_mode"] = config.ip_mode;
+    doc["ip"] = config.ip;
+    doc["subnet"] = config.subnet;
+    doc["gateway"] = config.gateway;
+    doc["dns1"] = config.dns1;
+    doc["dns2"] = config.dns2;
     serializeJson(doc, output);
     return output;
 }

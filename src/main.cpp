@@ -240,8 +240,24 @@ void setup() {
 
     Serial.println("WeMos DHT Server");
     Serial.println("");
-    if (config.host != "") {
-        initWiFi(config.ssid, config.password);
+    if (config.ssid != "" && config.password != "") {
+        Serial.print("DHCP mode: ");
+        Serial.print(config.ip_mode);
+        Serial.print(" isStatic ");
+        Serial.print(config.ip_mode == "static");
+        if (config.ip_mode == "static") {
+            IPAddress ip, subnet, gateway, dns1, dns2;
+
+            ip.fromString(config.ip);
+            subnet.fromString(config.subnet);
+            gateway.fromString(config.gateway);
+            dns1.fromString(config.gateway);
+            dns2.fromString(config.gateway);
+
+            initWiFi(config.ssid, config.password, ip, subnet, gateway, config.host, dns1, dns2);
+        } else {
+            initWiFi(config.ssid, config.password, config.host);
+        }
         initOTA(config.host);
     } else {
         iniWiFiAP(APSSID, APPSK);
