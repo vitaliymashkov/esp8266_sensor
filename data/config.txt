@@ -1,5 +1,0 @@
-{
-  "ssid": "VetalW",
-  "password": "VetalM84OpenNet",
-  "host": "bathroom-1"
-}

@@ -4,3 +4,4 @@
 CMakeListsPrivate.txt
 cmake-build-debug
 node_modules
+config.txt
