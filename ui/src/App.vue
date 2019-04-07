@@ -7,7 +7,7 @@
       <span class="font-weight-light body-2">{{ time }}</span>
     </v-system-bar>
     <v-content class="pt-4">
-      <router-view :host="host"/>
+      <router-view :config="config" :data="data" @set-pin-val="setPinVal($event.key, $event.val)" @save-config="saveConfig"/>
     </v-content>
     <v-footer>
       <v-bottom-nav
@@ -50,6 +50,9 @@ export default {
       //host: '',
       bottomNav: this.$route.name,
       time: '',
+      config: {},
+      data: {},
+      pin_map: {},
     };
   },
   watch: {
@@ -58,16 +61,40 @@ export default {
     },
   },
   beforeMount() {
+    this.getMap();
     this.getData();
-    setInterval(() => { this.getData(); }, 5000);
+    //setInterval(() => { this.getData(); }, 5000);
+    this.getConfig();
   },
   methods: {
     setVal(data) {
+      this.data = data;
       this.time = moment(new Date(parseInt(`${data.time}000`, 10))).format('MMMM D YYYY, HH:mm:ss');
     },
     getData() {
       axios.get(`${this.host}/data.json`).then((resp) => {
         this.setVal(resp.data);
+      });
+    },
+    getConfig() {
+      axios.get(`${this.host}/config`).then((resp) => {
+        this.config =resp.data;
+      });
+    },
+    getMap() {
+      axios.get(`${this.host}/pin_map.json`).then((resp) => {
+        this.pin_map = resp.data.pin_map;
+      });
+    },
+    setPinVal(key, val) {
+      this.data.digital[key] = val ? 1 : 0;
+      axios.get(`${this.host}/set?pin=${this.pin_map[key]}&val=${val ? 1 : 0}`).then((resp) => {
+        this.setVal(resp.data);
+      });
+    },
+    saveConfig(config) {
+      axios.post(`${this.host}/config`,config).then((resp) => {
+        console.log(resp);
       });
     },
   },

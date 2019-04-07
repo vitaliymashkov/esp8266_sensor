@@ -1,4 +1,3 @@
-
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <Wire.h>
@@ -94,8 +93,7 @@ void read_sensor() {
 
 
 
-
-void sendData() {
+String getData() {
     epochTime = get_time();
     StaticJsonDocument<500> doc;
 
@@ -105,17 +103,26 @@ void sendData() {
     analogValues.add(analogRead(A0));
 
     // Create the "digital" array
-    JsonObject digitalValues = doc.createNestedObject("digital");
+    JsonArray digitalValues = doc.createNestedArray("digital");
 
-    digitalValues["D0"] = digitalRead(D0);
-    digitalValues["D1"] = digitalRead(D1);
-    digitalValues["D2"] = digitalRead(D2);
-    digitalValues["D3"] = digitalRead(D3);
-    digitalValues["D4"] = digitalRead(D4);
-    digitalValues["D5"] = digitalRead(D5);
-    digitalValues["D6"] = digitalRead(D6);
-    digitalValues["D7"] = digitalRead(D7);
+    digitalValues.add(digitalRead(D0));
+    digitalValues.add(digitalRead(D1));
+    digitalValues.add(digitalRead(D2));
+    digitalValues.add(digitalRead(D3));
+    digitalValues.add(digitalRead(D4));
+    digitalValues.add(digitalRead(D5));
+    digitalValues.add(digitalRead(D6));
+    digitalValues.add(digitalRead(D7));
 
+    doc["time"] = timeClient.getEpochTime();
+
+    String json;
+    serializeJson(doc, json);
+    return json;
+}
+
+String getPinMap() {
+    StaticJsonDocument<500> doc;
     JsonObject mapValues = doc.createNestedObject("pin_map");
 
     mapValues["D0"] = (D0);
@@ -127,31 +134,40 @@ void sendData() {
     mapValues["D6"] = (D6);
     mapValues["D7"] = (D7);
 
-    doc["time"] = timeClient.getEpochTime();
-    doc["temperature"] = temperature;
-    doc["humidity"] = humidity;
-
-    Serial.print(F("Sending: "));
-    serializeJsonPretty(doc, Serial);
-    Serial.println();
-
-    // Write response headers
-    // server.sendHeader(F("HTTP/1.0 200 OK"));
-    // server.sendHeader("Content-Type", "application/json");
-    // server.sendHeader("Content-Length: ", String(measureJsonPretty(doc)));
-
-    // Write JSON document
     String json;
-    serializeJsonPretty(doc, json);
+    serializeJson(doc, json);
+    return json;
+}
+
+void sendPinMap() {
+
+    String json = getPinMap();
 
     server.sendHeader("Access-Control-Allow-Origin","*");
+    server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    server.send(200, "application/json", json);
+}
+void sendData() {
+
+    String json = getData();
+
+    server.sendHeader("Access-Control-Allow-Origin","*");
+    server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     server.send(200, "application/json", json);
 }
 
-void saveConfig() {
+void getConfig() {
     server.sendHeader("Access-Control-Allow-Origin","*");
+    server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    server.send(200, "application/json", configToString(config));
+}
+
+void saveConfig() {
     if (server.hasArg("plain")== false){ //Check if body received
-        server.send(200, "application/json", configToString(config));
+        getConfig();
         return;
     }
     String body = server.arg("plain");
@@ -163,8 +179,10 @@ void saveConfig() {
     message += "\nConfig saved:\n";
     message += configToString(config);
     message += "\n";
-
-    server.send(200, "text/plain", message);
+    server.sendHeader("Access-Control-Allow-Origin","*");
+    server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    server.send(200, "application/json", configToString(config));
     Serial.println(message);
 }
 
@@ -205,15 +223,44 @@ void initHttpServer() {
     server.serveStatic("/img", SPIFFS, "/img");
     server.serveStatic("/js", SPIFFS, "/js");
 
+    server.on("/pin_map.json", sendPinMap);
+    server.on("/pin_map.json", HTTP_OPTIONS, []() {
+        server.sendHeader("Access-Control-Allow-Origin","*");
+        server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+
+        server.send(204);
+    });
     server.on("/data.json", sendData);
-    server.on("/config", saveConfig);
+    server.on("/ata.json", HTTP_OPTIONS, []() {
+        server.sendHeader("Access-Control-Allow-Origin","*");
+        server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+
+        server.send(204);
+    });
+    server.on("/config", HTTP_GET, getConfig);
+    server.on("/config", HTTP_POST, saveConfig);
+    server.on("/config", HTTP_OPTIONS, []() {
+        server.sendHeader("Access-Control-Allow-Origin","*");
+        server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+
+        server.send(204);
+    });
     server.on("/set", setPinVal);
+    server.on("/set", HTTP_OPTIONS, []() {
+        server.sendHeader("Access-Control-Allow-Origin","*");
+        server.sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+
+        server.send(204);
+    });
 
     // Start the web server
     server.begin();
     Serial.println("HTTP server started");
 }
-
 
 void setup() {
     initPins();
@@ -227,6 +274,8 @@ void setup() {
         Serial.println(config.ssid);
         Serial.print("Password: ");
         Serial.println(config.password);
+        Serial.print("Hub: ");
+        Serial.println(config.hub);
     }
 
     dht.begin();
@@ -234,9 +283,9 @@ void setup() {
     if (myHTU21D.begin() != true)
     {
         Serial.println(F("HTU21D, SHT21 sensor is faild or not connected")); //(F()) saves string to flash & keeps dynamic memory free
-        delay(5000);
+    } else {
+        Serial.println(F("HTU21D, SHT21 sensor is active"));
     }
-    Serial.println(F("HTU21D, SHT21 sensor is active"));
 
     Serial.println("WeMos DHT Server");
     Serial.println("");
@@ -272,7 +321,7 @@ void setup() {
 void loop() {
     ArduinoOTA.handle();
     server.handleClient();
-    if (config.host != "") {
+    if (config.ssid != "") {
         read_sensor();
         epochTime = get_time();
     }

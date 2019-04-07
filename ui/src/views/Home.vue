@@ -7,7 +7,7 @@
       <v-card-text>
         <h3>Analog</h3>
         <template
-          v-for="(val, index) in analog"
+          v-for="(val, index) in data.analog"
         >
           <v-text-field :key="`A${index}`" :value="val" :label="`A${index}`" disabled />
         </template>
@@ -15,13 +15,13 @@
         <v-container v-bind="{ [`grid-list-3`]: true }" fluid>
           <v-layout row wrap>
             <v-flex xs4
-              v-for="(val, key) in digital"
+              v-for="(val, key) in data.digital"
             >
               <v-switch
-                v-model="digital[key]"
+                v-model="data.digital[key]"
                 :key="key"
-                :label="`${key}`"
-                @change="setPinVal(key, $event)"
+                :label="`D${key}`"
+                @change="$emit('set-pin-val', {key: 'D' + key, val: $event})"
               ></v-switch>
             </v-flex>
           </v-layout>
@@ -32,47 +32,16 @@
 </template>
 
 <script>
-import axios from 'axios';
 
 export default {
   props: {
-    host: {
-      type: String,
-      default: '',
+    config: {
+      type: Object,
+      default: () => {},
     },
-  },
-  data() {
-    return {
-      analog: [],
-      digital: {},
-      time: 0,
-      temperature: 0,
-      humidity: 0,
-      pin_map: 0,
-    };
-  },
-  beforeMount() {
-    this.getData();
-  },
-  methods: {
-    setVal(data) {
-      this.analog = data.analog;
-      this.digital = data.digital;
-      this.time = data.time;
-      this.temperature = data.temperature;
-      this.humidity = data.humidity;
-      this.pin_map = data.pin_map;
-    },
-    getData() {
-      axios.get(`${this.host}/data.json`).then((resp) => {
-        this.setVal(resp.data);
-      });
-    },
-    setPinVal(key, val) {
-      this.digital[key] = val ? 1 : 0;
-      axios.get(`${this.host}/set?pin=${this.pin_map[key]}&val=${val ? 1 : 0}`).then((resp) => {
-        this.setVal(resp.data);
-      });
+    data: {
+      type: Object,
+      default: () => {},
     },
   },
 };

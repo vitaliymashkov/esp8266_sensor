@@ -8,6 +8,7 @@
 #include <FS.h>
 
 struct Sensor {
+    String name;
     String type;
     String pin;
 };
@@ -22,7 +23,8 @@ struct Config {
     String gateway;
     String dns1;
     String dns2;
-    Sensor sensors[9];
+    String hub;
+    Sensor* sensors;
 };
 
 void initFS() {
@@ -39,7 +41,7 @@ void configFromString(String &data, Config &config){
     // Allocate a temporary JsonDocument
     // Don't forget to change the capacity to match your requirements.
     // Use arduinojson.org/v6/assistant to compute the capacity.
-    StaticJsonDocument<512> doc;
+    StaticJsonDocument<1024> doc;
     // Deserialize the JSON document
     DeserializationError error = deserializeJson(doc, data);
     if (error) {
@@ -110,6 +112,21 @@ void configFromString(String &data, Config &config){
         Serial.println("dns2 empty");
         config.dns2 = "";
     }
+    if (doc["hub"] != "") {
+        const char *g = doc["hub"];
+        config.hub = g;
+    } else {
+        Serial.println("hub empty");
+        config.hub = "";
+    }
+    Serial.print("Sensors length: ");
+    Serial.println(doc["sensors"].size());
+    int l = doc["sensors"].size();
+    Sensor s[l];
+    for(int i = 0; i < l; i++) {
+        s[i] = (Sensor) {doc["sensors"][i]["name"], doc["sensors"][i]["type"], doc["sensors"][i]["pin"]};
+    }
+    config.sensors = s;
 }
 
 // Loads the configuration from a file
@@ -140,7 +157,7 @@ String configToString(const Config &config) {
     // Allocate a temporary JsonDocument
     // Don't forget to change the capacity to match your requirements.
     // Use arduinojson.org/assistant to compute the capacity.
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<1024> doc;
 
     // Set the values in the document
     doc["ssid"] = config.ssid;
@@ -152,6 +169,7 @@ String configToString(const Config &config) {
     doc["gateway"] = config.gateway;
     doc["dns1"] = config.dns1;
     doc["dns2"] = config.dns2;
+    doc["hub"] = config.hub;
     serializeJson(doc, output);
     return output;
 }

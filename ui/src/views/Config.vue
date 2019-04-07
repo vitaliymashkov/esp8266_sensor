@@ -32,11 +32,12 @@
           <v-text-field v-model="config.dns1" label="DNS1"/>
           <v-text-field v-model="config.dns2" label="DNS2"/>
         </template>
+        <v-text-field v-model="config.hub" label="Hub Address"/>
       </v-form>
     </v-card-text>
     <v-card-actions>
       <v-spacer />
-      <v-btn color="success">Save</v-btn>
+      <v-btn color="success" @click="$emit('save-config', config)">Save</v-btn>
     </v-card-actions>
   </v-card>
 </template>
@@ -46,15 +47,14 @@ import axios from 'axios';
 
 export default {
   props: {
-    host: {
-      type: String,
-      default: '',
+    config: {
+      type: Object,
+      default: () => {},
     },
   },
   data() {
     return {
       show1: false,
-      config: {},
       dhcpModes: [
         {
           text: 'Static IP',
@@ -66,19 +66,6 @@ export default {
         },
       ],
     };
-  },
-  beforeMount() {
-    this.getData();
-  },
-  methods: {
-    setVal(data) {
-      this.config = data;
-    },
-    getData() {
-      axios.get(`${this.host}/config`).then((resp) => {
-        this.setVal(resp.data);
-      });
-    },
   },
 };
 </script>
